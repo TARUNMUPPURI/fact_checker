@@ -1,0 +1,16 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets and Data
+.env
+scripture_gpt/.chroma/
+scripture_gpt/raw_sargas/
+scripture_gpt/output/extracted/

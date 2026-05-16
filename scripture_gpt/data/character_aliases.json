@@ -1,0 +1,364 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "scripture": "Valmiki Ramayana",
+    "total_characters": 21,
+    "total_locations": 5,
+    "total_objects": 5,
+    "created": "2026-05-16",
+    "description": "Master alias dictionary for entity normalisation across all 7 Kandas"
+  },
+  "characters": {
+    "hanuman": {
+      "canonical_id": "hanuman",
+      "canonical_name": "Hanuman",
+      "gender": "male",
+      "species": "vanara",
+      "role": "Devoted minister of Sugriva, messenger and champion of Rama",
+      "aliases": ["Hanuman", "Hanumat", "Hanumaan", "Anuman", "Pawansut"],
+      "epithets": ["Anjaneya", "Maruti", "Pavanputra", "Bajrangbali", "Mahavira", "Kesarinandana", "Sankatamochan"],
+      "descriptive_references": ["son of the wind god", "son of Anjana", "son of Kesari", "lord of vanaras", "devotee of Rama"],
+      "primary_kandas": ["kishkindha_kanda", "sundara_kanda", "yuddha_kanda"],
+      "key_events": ["joins_rama_army", "leaps_to_lanka", "finds_sita", "burns_lanka", "brings_sanjeevani"]
+    },
+    "rama": {
+      "canonical_id": "rama",
+      "canonical_name": "Rama",
+      "gender": "male",
+      "species": "human",
+      "role": "Prince of Ayodhya, seventh avatar of Vishnu, hero of the Ramayana",
+      "aliases": ["Ram", "Raam", "Raama", "Rama"],
+      "epithets": ["Raghava", "Raghunatha", "Dasharathi", "Ramachandra", "Koshalendra", "Maryada Purushottama"],
+      "descriptive_references": ["son of Dasharatha", "prince of Ayodhya", "husband of Sita", "slayer of Ravana"],
+      "primary_kandas": ["bala_kanda", "ayodhya_kanda", "aranya_kanda", "kishkindha_kanda", "yuddha_kanda"],
+      "key_events": ["breaks_shiva_bow", "exile_begins", "sita_abducted", "alliance_with_sugriva", "kills_ravana", "coronation"]
+    },
+    "sita": {
+      "canonical_id": "sita",
+      "canonical_name": "Sita",
+      "gender": "female",
+      "species": "human",
+      "role": "Princess of Mithila, wife of Rama, daughter of King Janaka",
+      "aliases": ["Seeta", "Seetha", "Sita"],
+      "epithets": ["Janaki", "Vaidehi", "Maithili", "Bhoomija", "Janakatmaja"],
+      "descriptive_references": ["daughter of Janaka", "wife of Rama", "daughter of the earth"],
+      "primary_kandas": ["bala_kanda", "ayodhya_kanda", "aranya_kanda", "sundara_kanda", "yuddha_kanda"],
+      "key_events": ["svayamvara", "follows_rama_to_forest", "abducted_by_ravana", "agni_pariksha"]
+    },
+    "ravana": {
+      "canonical_id": "ravana",
+      "canonical_name": "Ravana",
+      "gender": "male",
+      "species": "rakshasa",
+      "role": "King of Lanka, ten-headed demon king, principal antagonist",
+      "aliases": ["Ravan", "Ravaan", "Ravana"],
+      "epithets": ["Dashanan", "Dashamukha", "Lankesh", "Lankeshvara", "Paulastya"],
+      "descriptive_references": ["ten-headed king of Lanka", "grandson of Brahma", "son of Vishrava", "abductor of Sita"],
+      "primary_kandas": ["aranya_kanda", "sundara_kanda", "yuddha_kanda"],
+      "key_events": ["abducts_sita", "defeats_jatayu", "killed_by_rama"]
+    },
+    "lakshmana": {
+      "canonical_id": "lakshmana",
+      "canonical_name": "Lakshmana",
+      "gender": "male",
+      "species": "human",
+      "role": "Younger brother of Rama, loyal companion throughout exile",
+      "aliases": ["Lakshman", "Laxmana", "Laxman", "Lakshmana"],
+      "epithets": ["Saumitri", "Ramanuja"],
+      "descriptive_references": ["son of Sumitra", "younger brother of Rama", "guardian of Sita"],
+      "primary_kandas": ["bala_kanda", "ayodhya_kanda", "aranya_kanda", "yuddha_kanda"],
+      "key_events": ["joins_exile", "draws_lakshman_rekha", "battles_indrajit", "faints_in_battle"]
+    },
+    "sugriva": {
+      "canonical_id": "sugriva",
+      "canonical_name": "Sugriva",
+      "gender": "male",
+      "species": "vanara",
+      "role": "King of Kishkindha, ally of Rama, younger brother of Vali",
+      "aliases": ["Sugreeva", "Sugreeva", "Sugriva"],
+      "epithets": ["Vanara-raja", "Riksharaja-putra"],
+      "descriptive_references": ["son of Surya", "king of vanaras", "brother of Vali"],
+      "primary_kandas": ["kishkindha_kanda", "yuddha_kanda"],
+      "key_events": ["alliance_with_rama", "vali_killed", "crowned_king", "sends_search_parties"]
+    },
+    "vali": {
+      "canonical_id": "vali",
+      "canonical_name": "Vali",
+      "gender": "male",
+      "species": "vanara",
+      "role": "Former king of Kishkindha, elder brother of Sugriva, slain by Rama",
+      "aliases": ["Bali", "Baali", "Vali"],
+      "epithets": ["Indratmaja", "Shakraputra"],
+      "descriptive_references": ["son of Indra", "elder brother of Sugriva", "king of Kishkindha"],
+      "primary_kandas": ["kishkindha_kanda"],
+      "key_events": ["exiles_sugriva", "killed_by_rama"]
+    },
+    "vibhishana": {
+      "canonical_id": "vibhishana",
+      "canonical_name": "Vibhishana",
+      "gender": "male",
+      "species": "rakshasa",
+      "role": "Righteous younger brother of Ravana who defected to Rama's side",
+      "aliases": ["Vibheeshan", "Vibhishan", "Vibhishana"],
+      "epithets": ["Dharmatma", "Lanka-raja"],
+      "descriptive_references": ["younger brother of Ravana", "righteous rakshasa", "king of Lanka after Ravana"],
+      "primary_kandas": ["yuddha_kanda"],
+      "key_events": ["defects_to_rama", "crowned_king_of_lanka", "reveals_ravana_weakness"]
+    },
+    "jatayu": {
+      "canonical_id": "jatayu",
+      "canonical_name": "Jatayu",
+      "gender": "male",
+      "species": "bird",
+      "role": "Aged vulture king, friend of Dasharatha, who battled Ravana to protect Sita",
+      "aliases": ["Jataayu", "Jatayu"],
+      "epithets": ["Gridhraraja", "Pakshiraja"],
+      "descriptive_references": ["king of vultures", "friend of Dasharatha", "son of Aruna"],
+      "primary_kandas": ["aranya_kanda"],
+      "key_events": ["battles_ravana", "dies_informing_rama"]
+    },
+    "kumbhakarna": {
+      "canonical_id": "kumbhakarna",
+      "canonical_name": "Kumbhakarna",
+      "gender": "male",
+      "species": "rakshasa",
+      "role": "Younger brother of Ravana, giant warrior who sleeps six months at a stretch",
+      "aliases": ["Kumbhkarna", "Kumbhakarna"],
+      "epithets": ["Maha-rakshasa"],
+      "descriptive_references": ["brother of Ravana", "the sleeping giant", "son of Vishrava"],
+      "primary_kandas": ["yuddha_kanda"],
+      "key_events": ["awakened_for_war", "killed_by_rama"]
+    },
+    "indrajit": {
+      "canonical_id": "indrajit",
+      "canonical_name": "Indrajit",
+      "gender": "male",
+      "species": "rakshasa",
+      "role": "Son of Ravana, greatest warrior of Lanka, conqueror of Indra",
+      "aliases": ["Meghnad", "Meghnada", "Indrajit"],
+      "epithets": ["Meghnaad", "Tamasvi"],
+      "descriptive_references": ["son of Ravana", "conqueror of Indra", "greatest archer in Lanka"],
+      "primary_kandas": ["yuddha_kanda"],
+      "key_events": ["captures_rama_lakshmana_with_nagapasha", "killed_by_lakshmana"]
+    },
+    "dasharatha": {
+      "canonical_id": "dasharatha",
+      "canonical_name": "Dasharatha",
+      "gender": "male",
+      "species": "human",
+      "role": "King of Ayodhya, father of Rama, Bharata, Lakshmana and Shatrughna",
+      "aliases": ["Dashrath", "Dasharath", "Dasharatha"],
+      "epithets": ["Koshalendra", "Raghu-kula-raja"],
+      "descriptive_references": ["king of Ayodhya", "father of Rama", "husband of Kaushalya"],
+      "primary_kandas": ["bala_kanda", "ayodhya_kanda"],
+      "key_events": ["rama_born", "grants_kaikeyi_boons", "dies_of_grief"]
+    },
+    "angada": {
+      "canonical_id": "angada",
+      "canonical_name": "Angada",
+      "gender": "male",
+      "species": "vanara",
+      "role": "Son of Vali, prince of Kishkindha, commander in Rama's army",
+      "aliases": ["Angad", "Angada"],
+      "epithets": ["Valiputra"],
+      "descriptive_references": ["son of Vali", "prince of Kishkindha", "Rama's ambassador to Lanka"],
+      "primary_kandas": ["kishkindha_kanda", "yuddha_kanda"],
+      "key_events": ["leads_search_party", "ambassador_to_lanka", "battles_in_yuddha"]
+    },
+    "trijata": {
+      "canonical_id": "trijata",
+      "canonical_name": "Trijata",
+      "gender": "female",
+      "species": "rakshasa",
+      "role": "Kind rakshasi in Ashoka grove who consoled and protected Sita",
+      "aliases": ["Trijata"],
+      "epithets": [],
+      "descriptive_references": ["rakshasi guard in Ashoka grove", "protector of Sita", "granddaughter of Vibhishana"],
+      "primary_kandas": ["sundara_kanda", "yuddha_kanda"],
+      "key_events": ["consoles_sita", "prophesies_rama_victory"]
+    },
+    "lankini": {
+      "canonical_id": "lankini",
+      "canonical_name": "Lankini",
+      "gender": "female",
+      "species": "rakshasa",
+      "role": "Demoness guardian of Lanka's gates, defeated by Hanuman at entry",
+      "aliases": ["Lankhini", "Lankini"],
+      "epithets": ["Lanka-devi", "Lanka-rakshasi"],
+      "descriptive_references": ["guardian deity of Lanka", "gatekeeper of Lanka"],
+      "primary_kandas": ["sundara_kanda"],
+      "key_events": ["guards_lanka_gate", "defeated_by_hanuman"]
+    },
+    "surpanakha": {
+      "canonical_id": "surpanakha",
+      "canonical_name": "Surpanakha",
+      "gender": "female",
+      "species": "rakshasa",
+      "role": "Sister of Ravana whose disfigurement by Lakshmana triggered the war",
+      "aliases": ["Shurpanakha", "Surpanakha"],
+      "epithets": ["Minakshi"],
+      "descriptive_references": ["sister of Ravana", "rakshasi of Dandaka forest"],
+      "primary_kandas": ["aranya_kanda"],
+      "key_events": ["approaches_rama", "disfigured_by_lakshmana", "incites_ravana"]
+    },
+    "mareecha": {
+      "canonical_id": "mareecha",
+      "canonical_name": "Mareecha",
+      "gender": "male",
+      "species": "rakshasa",
+      "role": "Rakshasa uncle of Ravana who took the form of a golden deer to lure Rama",
+      "aliases": ["Maricha", "Mareecha"],
+      "epithets": [],
+      "descriptive_references": ["uncle of Ravana", "the golden deer", "son of Tataka"],
+      "primary_kandas": ["bala_kanda", "aranya_kanda"],
+      "key_events": ["becomes_golden_deer", "lures_rama", "killed_by_rama"]
+    },
+    "shabari": {
+      "canonical_id": "shabari",
+      "canonical_name": "Shabari",
+      "gender": "female",
+      "species": "human",
+      "role": "Devoted tribal ascetic who waited years for Rama and offered him tasted berries",
+      "aliases": ["Shabri", "Shabari"],
+      "epithets": ["Bhilni"],
+      "descriptive_references": ["devoted ascetic", "disciple of Matanga", "tribal woman of Dandaka"],
+      "primary_kandas": ["aranya_kanda"],
+      "key_events": ["offers_berries_to_rama", "attains_moksha"]
+    },
+    "sampati": {
+      "canonical_id": "sampati",
+      "canonical_name": "Sampati",
+      "gender": "male",
+      "species": "bird",
+      "role": "Elder brother of Jatayu who provided intelligence on Sita's whereabouts in Lanka",
+      "aliases": ["Sampati", "Sampathi"],
+      "epithets": ["Gridhraraja"],
+      "descriptive_references": ["elder brother of Jatayu", "king of vultures", "son of Aruna"],
+      "primary_kandas": ["kishkindha_kanda"],
+      "key_events": ["informs_vanara_army_of_sitas_location"]
+    },
+    "nala": {
+      "canonical_id": "nala",
+      "canonical_name": "Nala",
+      "gender": "male",
+      "species": "vanara",
+      "role": "Vanara architect who designed and supervised the bridge to Lanka",
+      "aliases": ["Nala", "Naal"],
+      "epithets": ["Setukara"],
+      "descriptive_references": ["son of Vishvakarma", "architect vanara", "builder of Rama's bridge"],
+      "primary_kandas": ["yuddha_kanda"],
+      "key_events": ["builds_rama_setu"]
+    },
+    "neela": {
+      "canonical_id": "neela",
+      "canonical_name": "Neela",
+      "gender": "male",
+      "species": "vanara",
+      "role": "Vanara general and son of Agni who helped construct the bridge to Lanka",
+      "aliases": ["Nila", "Neela"],
+      "epithets": ["Agniputra"],
+      "descriptive_references": ["son of Agni", "vanara general", "helped build the bridge"],
+      "primary_kandas": ["yuddha_kanda"],
+      "key_events": ["builds_rama_setu", "battles_in_yuddha"]
+    }
+  },
+  "locations": {
+    "ayodhya": {
+      "canonical_id": "ayodhya",
+      "canonical_name": "Ayodhya",
+      "aliases": ["Ayodhya", "Saketa"],
+      "description": "Capital of the Kosala kingdom, birthplace of Rama",
+      "primary_kandas": ["bala_kanda", "ayodhya_kanda", "uttara_kanda"]
+    },
+    "lanka": {
+      "canonical_id": "lanka",
+      "canonical_name": "Lanka",
+      "aliases": ["Lanka", "Lanka-puri"],
+      "description": "Island kingdom of Ravana",
+      "primary_kandas": ["sundara_kanda", "yuddha_kanda"]
+    },
+    "kishkindha": {
+      "canonical_id": "kishkindha",
+      "canonical_name": "Kishkindha",
+      "aliases": ["Kishkindha", "Kiskindha"],
+      "description": "Vanara kingdom ruled by Vali and later Sugriva",
+      "primary_kandas": ["kishkindha_kanda"]
+    },
+    "dandaka_forest": {
+      "canonical_id": "dandaka_forest",
+      "canonical_name": "Dandaka Forest",
+      "aliases": ["Dandakaranya", "Dandaka", "Dandaka forest"],
+      "description": "Dense forest where Rama, Sita and Lakshmana spent most of their exile",
+      "primary_kandas": ["aranya_kanda"]
+    },
+    "mithila": {
+      "canonical_id": "mithila",
+      "canonical_name": "Mithila",
+      "aliases": ["Mithila", "Videha"],
+      "description": "Kingdom of Janaka, birthplace of Sita",
+      "primary_kandas": ["bala_kanda"]
+    }
+  },
+  "objects": {
+    "pushpaka_vimana": {
+      "canonical_id": "pushpaka_vimana",
+      "canonical_name": "Pushpaka Vimana",
+      "aliases": ["Pushpak", "Pushpaka vimana", "celestial chariot"],
+      "description": "Celestial flying chariot originally belonging to Kubera, seized by Ravana"
+    },
+    "shiva_dhanush": {
+      "canonical_id": "shiva_dhanush",
+      "canonical_name": "Shiva Dhanush",
+      "aliases": ["Pinaka", "Shiva bow", "Shiva dhanush"],
+      "description": "Bow of Lord Shiva broken by Rama at Sita's svayamvara"
+    },
+    "sanjeevani": {
+      "canonical_id": "sanjeevani",
+      "canonical_name": "Sanjeevani",
+      "aliases": ["Sanjivani", "Mritsanjivani", "life herb"],
+      "description": "Life-restoring herb fetched by Hanuman from Dronagiri mountain"
+    },
+    "chudamani": {
+      "canonical_id": "chudamani",
+      "canonical_name": "Chudamani",
+      "aliases": ["Chudamani", "Sita's jewel", "hair jewel"],
+      "description": "Sita's hair jewel given to Hanuman as proof of their meeting in Lanka"
+    },
+    "brahmastra": {
+      "canonical_id": "brahmastra",
+      "canonical_name": "Brahmastra",
+      "aliases": ["Brahma-astra", "Brahmastra"],
+      "description": "Supremely powerful divine weapon of Brahma, invoked in key battles"
+    }
+  },
+  "normalization_rules": {
+    "description": "Rules for normalising Sanskrit diacritics to ASCII for alias matching",
+    "diacritic_map": {
+      "a_macron": {"from": "aa", "to": "a", "unicode": "U+0101"},
+      "i_macron": {"from": "ii", "to": "i", "unicode": "U+012B"},
+      "u_macron": {"from": "uu", "to": "u", "unicode": "U+016B"},
+      "sha_palatal": {"from": "sh", "to": "s", "unicode": "U+015B"},
+      "sha_retroflex": {"from": "sh", "to": "s", "unicode": "U+1E63"},
+      "m_anusvara": {"from": "m", "to": "m", "unicode": "U+1E43"},
+      "t_retroflex": {"from": "t", "to": "t", "unicode": "U+1E6D"},
+      "d_retroflex": {"from": "d", "to": "d", "unicode": "U+1E0D"},
+      "n_retroflex": {"from": "n", "to": "n", "unicode": "U+1E47"}
+    },
+    "ascii_substitutions": [
+      {"pattern": "aa", "replacement": "a", "example": "Raama -> Rama"},
+      {"pattern": "ii", "replacement": "i", "example": "Siita -> Sita"},
+      {"pattern": "uu", "replacement": "u", "example": "Suurya -> Surya"},
+      {"pattern": "sh", "replacement": "s", "example": "Raamesh -> Rames"},
+      {"pattern": "ee", "replacement": "i", "example": "Seeta -> Sita"}
+    ],
+    "case_fold": true,
+    "strip_punctuation": true,
+    "rules": [
+      "Apply diacritic_map character substitutions before any matching",
+      "Lowercase all text when case_fold is true",
+      "Strip leading and trailing whitespace",
+      "Collapse multiple internal spaces to single space",
+      "Remove punctuation when strip_punctuation is true before alias lookup"
+    ]
+  }
+}
