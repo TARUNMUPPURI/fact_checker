@@ -60,6 +60,12 @@ def main() -> None:
         help="Neo4j password (default: $NEO4J_PASSWORD)",
     )
     parser.add_argument(
+        "--only-ids-file",
+        default=None,
+        help="Path to a text file listing chunk IDs (one per line) to selectively re-ingest. "
+             "If omitted, all extraction JSONs are ingested.",
+    )
+    parser.add_argument(
         "--skip-chroma", action="store_true",
         help="Skip ChromaDB ingestion",
     )
@@ -68,6 +74,16 @@ def main() -> None:
         help="Skip Neo4j ingestion",
     )
     args = parser.parse_args()
+
+    # Load selective ID set if provided
+    only_ids: set | None = None
+    if args.only_ids_file:
+        ids_path = Path(args.only_ids_file)
+        if not ids_path.exists():
+            print(f"[ERROR] --only-ids-file not found: {ids_path}", file=sys.stderr)
+            sys.exit(1)
+        only_ids = set(line.strip() for line in ids_path.read_text(encoding='utf-8').splitlines() if line.strip())
+        print(f"Selective ingest: {len(only_ids)} chunk IDs loaded from {ids_path}")
 
     exit_code = 0
 
@@ -84,6 +100,7 @@ def main() -> None:
             ingestor.ingest_all(
                 extracted_dir=args.extracted_dir,
                 raw_sargas_dir=args.raw_sargas_dir,
+                only_ids=only_ids,
             )
         except ConnectionError as exc:
             print(f"\n[ERROR] ChromaDB connection failed: {exc}", file=sys.stderr)

@@ -1,19 +1,22 @@
 """
 llm_extractor.py
 ----------------
-Calls Claude Haiku to extract structured metadata from raw sarga text.
+Calls Gemini Flash to extract structured metadata from raw sarga text.
+(Previously used Claude Haiku / OpenAI GPT-4o-mini — kept as comments below)
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from dataclasses import dataclass, field
 from typing import Optional
-
-import anthropic
+import openai
+# import google.generativeai as genai
+# import anthropic
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +24,9 @@ log = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "gpt-5.4-mini"
+# MODEL = "gemini-1.5-flash"   # free tier: 1500 req/day, 15 RPM
+# MODEL = "claude-haiku-4-5-20251001"  # Anthropic alternative
 MAX_RETRIES = 3
 
 VALID_EVENT_TYPES = {
@@ -83,7 +88,7 @@ class ExtractionResult:
 class LLMExtractor:
     """Extracts structured metadata from sarga text via Claude Haiku."""
 
-    def __init__(self, aliases_path: str, api_key: Optional[str] = None):
+    def __init__(self, aliases_path: str, api_key: Optional[str] = None, gemini_api_key: Optional[str] = None):
         with open(aliases_path, encoding="utf-8") as f:
             aliases_data = json.load(f)
 
@@ -105,7 +110,13 @@ class LLMExtractor:
                     all_events.append(ev)
         self.valid_event_ids: list[str] = all_events
 
-        self._client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+        self._client = openai.OpenAI(api_key=api_key) if api_key else openai.OpenAI()
+        # --- Gemini Version ---
+        # _gemini_key = gemini_api_key or api_key or os.getenv("GEMINI_API_KEY")
+        # genai.configure(api_key=_gemini_key)
+        # self._client = genai.GenerativeModel(MODEL)
+        # --- Anthropic Version ---
+        # self._client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
 
     # ------------------------------------------------------------------
     # Public API
@@ -119,7 +130,7 @@ class LLMExtractor:
         sarga_number: int,
     ) -> ExtractionResult:
         """
-        Call Claude Haiku to extract metadata for one sarga.
+        Call Gemini Flash to extract metadata for one sarga.
         Retries up to MAX_RETRIES times on RateLimitError with exponential back-off.
         Raises ExtractionError if all retries fail.
         """
@@ -130,19 +141,16 @@ class LLMExtractor:
 
         for attempt in range(MAX_RETRIES):
             try:
-                message = self._client.messages.create(
+                message = self._client.chat.completions.create(
                     model=MODEL,
-                    max_tokens=1024,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                raw_response = message.content[0].text
-                tokens_used = (
-                    message.usage.input_tokens + message.usage.output_tokens
-                )
+                raw_response = message.choices[0].message.content
+                tokens_used = message.usage.total_tokens
                 break
 
-            except anthropic.RateLimitError as exc:
-                wait = 2 ** attempt
+            except openai.RateLimitError as exc:
+                wait = (2 ** attempt) * 5
                 log.warning(
                     "%s: RateLimitError (attempt %d/%d) — retrying in %ds",
                     chunk_id, attempt + 1, MAX_RETRIES, wait,
@@ -231,7 +239,7 @@ REQUIRED JSON SCHEMA (return ONLY valid JSON, no preamble, no markdown fences):
 }}
 
 SARGA TEXT:
-{sarga_text[:6000]}"""
+{sarga_text[:45000]}"""
 
     # ------------------------------------------------------------------
     # JSON parsing (with fallback)
@@ -299,27 +307,37 @@ SARGA TEXT:
 
     def _validate(self, r: ExtractionResult) -> ExtractionResult:
         # Filter character lists — unknowns go to unknown_characters
-        def _filter_chars(ids: list[str]) -> tuple[list[str], list[str]]:
-            valid, unknown = [], []
-            for cid in ids:
-                if cid in self.valid_character_ids:
-                    valid.append(cid)
-                else:
-                    unknown.append(cid)
-            return valid, unknown
-
-        valid_present, extra_unknown = _filter_chars(r.characters_present)
-        r.characters_present = valid_present
-        r.unknown_characters = list(dict.fromkeys(r.unknown_characters + extra_unknown))
+        # Filter characters
+        valid_present = []
+        extra_unknown = []
+        
+        # 1. Check characters_present
+        for char_id in r.characters_present:
+            char_id = char_id.strip().lower().replace(" ", "_").replace("-", "_")
+            if char_id in self.valid_character_ids:
+                valid_present.append(char_id)
+            else:
+                extra_unknown.append(char_id)
+                
+        # 2. Check unknown_characters
+        still_unknown = []
+        for u in r.unknown_characters:
+            uid = u.strip().lower().replace(" ", "_").replace("-", "_")
+            if uid in self.valid_character_ids:
+                valid_present.append(uid)
+            else:
+                still_unknown.append(u.strip())
+                
+        r.characters_present = list(dict.fromkeys(valid_present))
+        r.unknown_characters = list(dict.fromkeys(still_unknown + extra_unknown))
 
         r.characters_speaking = [
-            c for c in r.characters_speaking if c in self.valid_character_ids
+            c for c in r.characters_speaking if c.strip().lower().replace(" ", "_").replace("-", "_") in self.valid_character_ids
         ]
         r.characters_primary = [
-            c for c in r.characters_primary if c in self.valid_character_ids
+            c for c in r.characters_primary if c.strip().lower().replace(" ", "_").replace("-", "_") in self.valid_character_ids
         ]
 
-        # Filter locations
         valid_locs, extra_unknown_locs = [], []
         for lid in r.locations_mentioned:
             if lid in self.valid_location_ids:

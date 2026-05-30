@@ -68,6 +68,7 @@ class BatchProcessor:
         confidence_threshold: float = 0.7,
         delay: float = 0.3,
         dry_run: bool = False,
+        limit: int | None = None,
     ):
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
@@ -75,6 +76,7 @@ class BatchProcessor:
         self.confidence_threshold = confidence_threshold
         self.delay = delay
         self.dry_run = dry_run
+        self.limit = limit
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._review_queue_path = self.output_dir / "review_queue.json"
@@ -100,6 +102,9 @@ class BatchProcessor:
             f for f in all_files
             if f not in set(already_done)
         ]
+        if self.limit is not None:
+            pending_files = pending_files[:self.limit]
+            
         pending = len(pending_files)
         done = len(already_done)
 
@@ -311,6 +316,10 @@ def main(argv: list[str] | None = None) -> None:
         "--delay", type=float, default=0.3,
         help="Seconds between API calls (default: 0.3)",
     )
+    parser.add_argument(
+        "--limit", type=int, default=None,
+        help="Maximum number of sargas to process (useful for testing)",
+    )
     args = parser.parse_args(argv)
 
     processor = BatchProcessor(
@@ -320,6 +329,7 @@ def main(argv: list[str] | None = None) -> None:
         confidence_threshold=args.confidence_threshold,
         delay=args.delay,
         dry_run=args.dry_run,
+        limit=args.limit,
     )
     processor.run()
 

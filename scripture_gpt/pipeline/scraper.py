@@ -97,10 +97,17 @@ def _is_iast(text: str) -> bool:
     return bool(IAST_CHARS & set(text))
 
 
+def _is_pratipada(text: str) -> bool:
+    """True if text appears to be a word-by-word meaning (e.g. word = meaning)."""
+    return text.count(" = ") >= 1 or (text.count("=") >= 2)
+
+
 def _clean(text: str) -> str:
     """Normalise whitespace and strip shloka reference markers."""
     text = text.replace("\u00a0", " ").replace("\u200b", "")
     text = _REF_RE.sub("", text)
+    # Remove 'Verse Locator' and other common site artifacts
+    text = re.sub(r"\bVerse Locator\b", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -206,8 +213,10 @@ def parse_content(soup: BeautifulSoup) -> dict:
         }
     """
     devanagari_blocks: list[str] = []
-    iast_blocks: list[str] = []
     english_blocks: list[str] = []
+
+    shlokas = []
+    current_shloka = None
 
     for p in soup.find_all("p"):
         raw = p.get_text(separator=" ")
@@ -216,24 +225,46 @@ def parse_content(soup: BeautifulSoup) -> dict:
             continue
 
         if _is_devanagari(cleaned):
+            if current_shloka:
+                shlokas.append(current_shloka)
+            
+            current_shloka = {
+                "sanskrit_devanagari": cleaned,
+                "iast": "",
+                "pratipada_pieces": [],
+                "english_pieces": []
+            }
             devanagari_blocks.append(cleaned)
+            
         elif _is_iast(cleaned):
-            iast_blocks.append(cleaned)
-        elif len(cleaned) > 30:
-            english_blocks.append(cleaned)
+            if current_shloka:
+                if current_shloka["iast"]:
+                    current_shloka["iast"] += "\n" + cleaned
+                else:
+                    current_shloka["iast"] = cleaned
+                    
+        elif len(cleaned) > 10:
+            if _is_pratipada(cleaned):
+                if current_shloka:
+                    current_shloka["pratipada_pieces"].append(cleaned)
+            else:
+                english_blocks.append(cleaned)
+                if current_shloka:
+                    current_shloka["english_pieces"].append(cleaned)
 
-    # Pair into shlokas (best-effort — blocks appear in order per verse)
-    total = max(len(devanagari_blocks), len(iast_blocks), len(english_blocks), 1)
-    shlokas: list[dict] = []
-    for i in range(total):
-        entry = {
+    if current_shloka:
+        shlokas.append(current_shloka)
+
+    # Format the shlokas
+    final_shlokas = []
+    for i, sh in enumerate(shlokas):
+        final_shlokas.append({
             "shloka_number": i + 1,
-            "sanskrit_devanagari": devanagari_blocks[i] if i < len(devanagari_blocks) else "",
-            "iast": iast_blocks[i] if i < len(iast_blocks) else "",
-            "english": english_blocks[i] if i < len(english_blocks) else "",
-        }
-        if any(entry[k] for k in ("sanskrit_devanagari", "iast", "english")):
-            shlokas.append(entry)
+            "sanskrit_devanagari": sh["sanskrit_devanagari"],
+            "iast": sh["iast"],
+            "pratipada": "\n\n".join(sh["pratipada_pieces"]),
+            "english": "\n\n".join(sh["english_pieces"])
+        })
 
     text = "\n\n".join(english_blocks)
     text_sanskrit_full = "\n\n".join(devanagari_blocks)
@@ -246,7 +277,7 @@ def parse_content(soup: BeautifulSoup) -> dict:
             text = fallback
 
     return {
-        "shlokas": shlokas,
+        "shlokas": final_shlokas,
         "text": text,
         "text_sanskrit_full": text_sanskrit_full,
     }
@@ -273,6 +304,7 @@ def scrape_kanda(
     output_dir: Path,
     session: requests.Session,
     delay: float = 1.5,
+    force: bool = False,
 ) -> int:
     """Scrape all sargas for one kanda. Returns count of newly saved files."""
     meta = KANDA_REGISTRY[kanda_key]
@@ -305,7 +337,7 @@ def scrape_kanda(
         out_path = output_dir / f"{chunk_id}.json"
 
         # Resume support
-        if out_path.exists():
+        if out_path.exists() and not force:
             log.info("[%d/%d] %s  (exists -- skipping)", idx, total_found, chunk_id)
             continue
 
@@ -381,6 +413,11 @@ def main(argv: list[str] | None = None) -> None:
         default=1.5,
         help="Seconds between requests (default: 1.5)",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing files instead of skipping them",
+    )
     args = parser.parse_args(argv)
 
     output_dir: Path = args.output
@@ -398,7 +435,7 @@ def main(argv: list[str] | None = None) -> None:
             f"  Sargas: {meta['sarga_count']}  |  Delay: {args.delay}s\n"
             f"{'='*60}"
         )
-        n = scrape_kanda(kanda_key, output_dir, session, delay=args.delay)
+        n = scrape_kanda(kanda_key, output_dir, session, delay=args.delay, force=args.force)
         total_saved += n
         print(f"\n  -> {n} new file(s) saved for {kanda_key}")
 

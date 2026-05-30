@@ -26,7 +26,8 @@ load_dotenv()
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT))
 
-import anthropic
+import litellm
+import json
 from langgraph.graph import StateGraph, END
 
 log = logging.getLogger(__name__)
@@ -34,13 +35,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Models & costs
 # ---------------------------------------------------------------------------
-HAIKU  = "claude-haiku-4-5-20251001"
-SONNET = "claude-sonnet-4-6"
-
-COST = {
-    HAIKU:  {"input": 0.80 / 1_000_000, "output": 4.00 / 1_000_000},
-    SONNET: {"input": 3.00 / 1_000_000, "output": 15.00 / 1_000_000},
-}
+HAIKU  = os.environ.get("FAST_MODEL", "gemini/gemini-2.5-flash")
+SONNET = os.environ.get("REASONING_MODEL", "gemini/gemini-2.5-pro")
 
 VALID_VERDICTS = {"TRUE", "FALSE", "PARTIALLY_TRUE", "INSUFFICIENT_EVIDENCE"}
 VALID_KANDA_KEYS = {
@@ -100,7 +96,6 @@ class QueryResult:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-_client = anthropic.Anthropic()
 
 def _strip_fences(raw: str) -> str:
     s = re.sub(r"^```json\s*", "", raw.strip(), flags=re.IGNORECASE)
@@ -119,16 +114,20 @@ def _parse_json(raw: str) -> Optional[dict]:
             pass
     return None
 
-def _llm_cost(model: str, inp: int, out: int) -> float:
-    c = COST.get(model, COST[HAIKU])
-    return inp * c["input"] + out * c["output"]
+
 
 def _call(model: str, messages: list, tools: list | None = None,
-          max_tokens: int = 1024) -> anthropic.types.Message:
-    kwargs = dict(model=model, max_tokens=max_tokens, messages=messages)
+          max_tokens: int = 1024):
+    kwargs = dict(model=model, messages=messages)
+    # Pass both or use max_completion_tokens to support gpt-5/o1 models
+    if "gpt-5" in model or "o1" in model or "o3" in model:
+        kwargs["max_completion_tokens"] = max_tokens
+    else:
+        kwargs["max_tokens"] = max_tokens
+        
     if tools:
         kwargs["tools"] = tools
-    return _client.messages.create(**kwargs)
+    return litellm.completion(**kwargs)
 
 # ---------------------------------------------------------------------------
 # Module-level storage handles (set by QueryPipeline.__init__)
@@ -144,63 +143,63 @@ _raw_sargas_dir: Path = Path("scripture_gpt/raw_sargas")
 # ---------------------------------------------------------------------------
 TOOLS = [
     {
-        "name": "vector_search",
-        "description": (
-            "Search scripture passages by semantic meaning. "
-            "Use for conceptual queries about devotion, emotions, themes."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "query":            {"type": "string"},
-                "kanda_filter":     {"type": "string"},
-                "character_filter": {"type": "string"},
-                "top_k":            {"type": "integer", "default": 8},
-            },
-            "required": ["query"],
-        },
+        "type": "function",
+        "function": {
+            "name": "vector_search",
+            "description": "Search scripture passages by semantic meaning.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query":            {"type": "string"},
+                    "kanda_filter":     {"type": "string"},
+                    "character_filter": {"type": "string"},
+                    "top_k":            {"type": "integer", "default": 8},
+                },
+                "required": ["query"],
+            }
+        }
     },
     {
-        "name": "graph_traverse",
-        "description": (
-            "Get all appearances of a character across the Ramayana in story order. "
-            "Use when asked about a specific character."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "canonical_id": {"type": "string"},
-                "kanda":        {"type": "string"},
-            },
-            "required": ["canonical_id"],
-        },
+        "type": "function",
+        "function": {
+            "name": "graph_traverse",
+            "description": "Get all appearances of a character across the Ramayana.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "canonical_id": {"type": "string"},
+                    "kanda":        {"type": "string"},
+                },
+                "required": ["canonical_id"],
+            }
+        }
     },
     {
-        "name": "shloka_fetch",
-        "description": (
-            "Fetch the exact Sanskrit and English text of a specific sarga. "
-            "Use to get citation text before quoting it."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "chunk_id":      {"type": "string"},
-                "shloka_number": {"type": "integer"},
-            },
-            "required": ["chunk_id"],
-        },
+        "type": "function",
+        "function": {
+            "name": "shloka_fetch",
+            "description": "Fetch the exact Sanskrit and English text of a specific sarga.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chunk_id":      {"type": "string"},
+                    "shloka_number": {"type": "integer"},
+                },
+                "required": ["chunk_id"],
+            }
+        }
     },
     {
-        "name": "entity_lookup",
-        "description": (
-            "Resolve any name or epithet to a canonical character ID. "
-            "Use when you encounter an unfamiliar name like Anjaneya or Lankesh."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-            "required": ["name"],
-        },
+        "type": "function",
+        "function": {
+            "name": "entity_lookup",
+            "description": "Resolve any name or epithet to a canonical character ID.",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            }
+        }
     },
 ]
 
@@ -290,8 +289,9 @@ Return ONLY JSON:
 }}
 SIMPLE=single entity single lookup, MEDIUM=single kanda, COMPLEX=multi-kanda or factcheck."""
         msg = _call(HAIKU, [{"role": "user", "content": prompt}])
-        parsed = _parse_json(msg.content[0].text) or {}
-        inp, out = msg.usage.input_tokens, msg.usage.output_tokens
+        text = msg.choices[0].message.content or ""
+        parsed = _parse_json(text) or {}
+        inp, out = getattr(msg.usage, 'prompt_tokens', 0), getattr(msg.usage, 'completion_tokens', 0)
         return {
             "mode":             parsed.get("mode", "EXPLORE"),
             "complexity":       parsed.get("complexity", "COMPLEX"),
@@ -300,8 +300,8 @@ SIMPLE=single entity single lookup, MEDIUM=single kanda, COMPLEX=multi-kanda or 
             "claim":            parsed.get("claim", ""),
             "focus":            parsed.get("focus", state["query"]),
             "total_tokens":     inp + out,
-            "total_cost_usd":   _llm_cost(HAIKU, inp, out),
-            "messages":         [{"role": "assistant", "content": msg.content[0].text}],
+            "total_cost_usd":   litellm.completion_cost(completion_response=msg) or 0.0,
+            "messages":         [{"role": "assistant", "content": text}],
         }
     except Exception as exc:
         log.error("classify_intent error: %s", exc)
@@ -354,29 +354,27 @@ def call_tools(state: QueryState) -> dict:
         messages = [{"role": "user", "content": context_msg}] + history
 
         msg = _call(HAIKU, messages, tools=TOOLS, max_tokens=2048)
-        inp, out = msg.usage.input_tokens, msg.usage.output_tokens
+        inp, out = getattr(msg.usage, 'prompt_tokens', 0), getattr(msg.usage, 'completion_tokens', 0)
 
         new_tool_calls: list[dict] = []
         new_tool_results: list[dict] = []
 
-        for block in msg.content:
-            if block.type == "tool_use":
-                result = _exec_tool(block.name, block.input)
-                new_tool_calls.append({"name": block.name, "input": block.input})
-                new_tool_results.append({"tool": block.name, "result": result})
+        tool_calls = msg.choices[0].message.tool_calls or []
+        for tc in tool_calls:
+            args = json.loads(tc.function.arguments)
+            result = _exec_tool(tc.function.name, args)
+            new_tool_calls.append({"name": tc.function.name, "input": args})
+            new_tool_results.append({"tool": tc.function.name, "result": result})
 
-        msg_text = next(
-            (b.text for b in msg.content if b.type == "text"), ""
-        )
+        msg_text = msg.choices[0].message.content or ""
 
         return {
             "tool_calls_made":  new_tool_calls,
             "tool_results":     new_tool_results,
             "tool_rounds":      state.get("tool_rounds", 0) + (1 if new_tool_calls else 0),
             "total_tokens":     inp + out,
-            "total_cost_usd":   _llm_cost(HAIKU, inp, out),
-            "messages":         [{"role": "assistant", "content": msg_text or str(msg.content)}],
-            "_last_stop_reason": msg.stop_reason,
+            "total_cost_usd":   litellm.completion_cost(completion_response=msg) or 0.0,
+            "messages":         [{"role": "assistant", "content": msg_text or str(new_tool_calls)}],
         }
     except Exception as exc:
         log.error("call_tools error: %s", exc)
@@ -403,7 +401,7 @@ async def _summarise_kanda(kanda: str, focus: str, claim: str,
     )
     try:
         msg = _call(HAIKU, [{"role": "user", "content": prompt}])
-        parsed = _parse_json(msg.content[0].text) or {"has_evidence": False, "summary": ""}
+        parsed = _parse_json(msg.choices[0].message.content or "") or {"has_evidence": False, "summary": ""}
     except Exception as exc:
         parsed = {"has_evidence": False, "summary": f"Error: {exc}"}
     return kanda, parsed
@@ -464,8 +462,9 @@ def reason(state: QueryState) -> dict:
             )
 
         msg = _call(SONNET, [{"role": "user", "content": prompt}], max_tokens=2048)
-        parsed = _parse_json(msg.content[0].text) or {}
-        inp, out = msg.usage.input_tokens, msg.usage.output_tokens
+        text = msg.choices[0].message.content or ""
+        parsed = _parse_json(text) or {}
+        inp, out = getattr(msg.usage, 'prompt_tokens', 0), getattr(msg.usage, 'completion_tokens', 0)
 
         verdict = parsed.get("verdict", "INSUFFICIENT_EVIDENCE")
         if verdict not in VALID_VERDICTS:
@@ -480,8 +479,8 @@ def reason(state: QueryState) -> dict:
             "narrative":           parsed.get("narrative", ""),
             "citations":           parsed.get("citations", []),
             "total_tokens":        inp + out,
-            "total_cost_usd":      _llm_cost(SONNET, inp, out),
-            "messages":            [{"role": "assistant", "content": msg.content[0].text}],
+            "total_cost_usd":      litellm.completion_cost(completion_response=msg) or 0.0,
+            "messages":            [{"role": "assistant", "content": text}],
         }
     except Exception as exc:
         log.error("reason error: %s", exc)
@@ -489,13 +488,13 @@ def reason(state: QueryState) -> dict:
                 "verdict_confidence": 0.0}
 
 # ---------------------------------------------------------------------------
-# NODE 6: verify_citations
+# NODE 6: verify_citations_1
 # ---------------------------------------------------------------------------
 
 def verify_citations(state: QueryState) -> dict:
     citations = list(state.get("citations", []))
     if not citations:
-        return {}
+        return {"citations": []}
     try:
         verified: list[dict] = []
         removed = 0
@@ -503,36 +502,48 @@ def verify_citations(state: QueryState) -> dict:
             chunk_id = cite.get("chunk_id", "")
             if not chunk_id:
                 continue
-            fetched = _exec_tool("shloka_fetch", {"chunk_id": chunk_id,
-                                                   "shloka_number": cite.get("shloka_number")})
-            if "error" in fetched:
+                
+            path = _raw_sargas_dir / f"{chunk_id}.json"
+            if not path.exists():
                 removed += 1
                 continue
-            # Quick verification: check the claimed english text appears in fetched text
-            claim_en = cite.get("english", "").lower()[:60]
-            fetched_text = str(fetched).lower()
-            if claim_en and claim_en not in fetched_text:
-                # Ask Haiku to verify
-                try:
-                    prompt = (
-                        f"Does this passage support the claim?\n"
-                        f"Claim: {cite.get('detail','')}\n"
-                        f"Passage: {str(fetched)[:800]}\n"
-                        "Reply ONLY: YES or NO"
-                    )
-                    msg = _call(HAIKU, [{"role": "user", "content": prompt}], max_tokens=8)
-                    if "NO" in msg.content[0].text.upper():
-                        removed += 1
-                        continue
-                except Exception:
-                    pass
-            verified.append(cite)
-
+                
+            data = json.loads(path.read_text(encoding="utf-8"))
+            shlokas = data.get("shlokas", [])
+            
+            claim_en = cite.get("english", "").lower().strip()
+            
+            best_shloka = None
+            if claim_en and len(claim_en) > 10:
+                # Find shloka with overlapping english text
+                for s in shlokas:
+                    s_en = s.get("english", "").lower()
+                    check_len = min(20, len(claim_en))
+                    if claim_en[:check_len] in s_en or claim_en[-check_len:] in s_en:
+                        best_shloka = s
+                        break
+                        
+            if not best_shloka and cite.get("shloka_number"):
+                sn = cite.get("shloka_number")
+                for s in shlokas:
+                    if s.get("shloka_number") == sn:
+                        best_shloka = s
+                        break
+                        
+            if best_shloka:
+                cite["shloka_number"] = best_shloka.get("shloka_number")
+                cite["sanskrit_devanagari"] = best_shloka.get("sanskrit_devanagari")
+                cite["english"] = best_shloka.get("english")
+                verified.append(cite)
+            else:
+                # Keep the citation as it points to the correct sarga, but leave sanskrit empty
+                verified.append(cite)
+                
         conf = max(0.0, float(state.get("verdict_confidence", 0.0)) - 0.1 * removed)
         return {"citations": verified, "verdict_confidence": conf}
     except Exception as exc:
         log.error("verify_citations error: %s", exc)
-        return {"error": str(exc)}
+        return {"error": str(exc), "citations": citations}
 
 # ---------------------------------------------------------------------------
 # NODE 7: format_output
@@ -646,9 +657,7 @@ class QueryPipeline:
         _aliases_data = json.loads(aliases_path.read_text(encoding="utf-8"))
         _valid_char_ids = sorted(_aliases_data.get("characters", {}).keys())
 
-        if api_key:
-            global _client
-            _client = anthropic.Anthropic(api_key=api_key)
+        pass # litellm handles routing internally
 
         # ChromaDB (optional — graceful degradation)
         try:

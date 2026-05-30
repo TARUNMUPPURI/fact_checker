@@ -103,18 +103,28 @@ class ChromaIngestor:
     # Public API
     # ------------------------------------------------------------------
 
-    def ingest_all(self, extracted_dir: str | Path, raw_sargas_dir: str | Path) -> None:
+    def ingest_all(
+        self,
+        extracted_dir: str | Path,
+        raw_sargas_dir: str | Path,
+        only_ids: Optional[set] = None,
+    ) -> None:
         """
         Ingest every extraction JSON in extracted_dir.
+        If only_ids is provided, only those chunk IDs are processed (selective re-ingest).
         Fetches the corresponding raw sarga JSON for the full English text.
         """
         extracted_dir = Path(extracted_dir)
         raw_sargas_dir = Path(raw_sargas_dir)
 
-        files = sorted(f for f in extracted_dir.glob("*.json")
-                       if f.name != "review_queue.json")
+        files = sorted(
+            f for f in extracted_dir.glob("*.json")
+            if f.name != "review_queue.json"
+            and (only_ids is None or f.stem in only_ids)
+        )
         total = len(files)
-        log.info("ChromaDB: %d extraction files to ingest", total)
+        mode = f"selective ({total} of only_ids)" if only_ids is not None else f"full ({total})"
+        log.info("ChromaDB: ingesting %s files", mode)
 
         # Process in batches of EMBED_BATCH_SIZE
         batch_ids: list[str] = []
@@ -237,10 +247,26 @@ class ChromaIngestor:
             return False
 
         chroma_doc = chunk_to_chromadb(chunk)
-        text = chroma_doc["document"]
-        if not text.strip():
+
+        # Build embedding document: summary first (covers full chapter), then raw text.
+        # Even if raw text is long, the summary anchors the full narrative in the vector.
+        summary  = chunk.text_summary.strip()
+        raw_body = chunk.text.strip()
+
+        if summary and raw_body:
+            combined = f"Summary: {summary}\n\nFull Text: {raw_body}"
+        elif summary:
+            combined = summary
+        else:
+            combined = raw_body
+
+        if not combined.strip():
             log.warning("%s: empty text — skipping embedding", chunk_id)
             return False
+
+        # Cap at 28,000 chars (~7,000 tokens) — safely under OpenAI's 8,192 token hard limit.
+        # The summary is at the front, so it is never cut off even for the longest chapters.
+        text = combined[:28000]
 
         # Sanitise metadata — all values must be scalar (str/int/float/bool)
         meta = {k: _safe_meta_value(v) for k, v in chroma_doc["metadata"].items()}

@@ -8,5 +8,6 @@ streamlit==1.35.0
 requests==2.32.3
 beautifulsoup4==4.12.3
 langgraph==0.2.6
-openai==1.35.3
+openai>=1.40.0
 python-dotenv==1.0.1
+litellm
